@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Atendimento – Dinâmico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        dark: '#1F2937',
+                        light: '#F9FAFB',
+                        whatsapp: '#25D366',
+                        info: '#3B82F6',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        success: '#10B981'
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .data-table th {position:sticky;top:0;background:#4F46E5;color:#fff;z-index:10}
+        .status-mensagem{background:#DBEAFE;color:#1E40AF}
+        .status-respondeu{background:#D1FAE5;color:#065F46}
+        .status-nao-respondeu{background:#FEE2E2;color:#991B1B}
+        .status-queria-comprar{background:#FEF3C7;color:#92400E}
+        .status-entrega{background:#E0F2FE;color:#075985}
+        .status-bloqueou{background:#EDE9FE;color:#5B21B6}
+        .status-fila{background:#ECFDF5;color:#047857}
+        .wa-btn{transition:transform .2s ease}
+        .wa-btn:hover{transform:scale(1.05);box-shadow:0 3px 6px rgba(0,0,0,.1)}
+        .wa-disabled{opacity:.4;pointer-events:none;filter:grayscale(100%)}
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        #menu-atendimento,
+        #menu-atendentes {
+          display: none;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar {
+            width: 250px;
+            transition: all 0.3s;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 100;
+            overflow-y: auto;
+            background-color: white;
+        }
+        .sidebar-collapsed {
+            width: 70px;
+        }
+        .sidebar-collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar-collapsed .sidebar-icon {
+            margin-right: 0;
+        }
+        .sidebar-collapsed .logo-text {
+            display: none;
+        }
+        .sidebar-collapsed .logo-icon {
+            margin-right: 0;
+        }
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+        }
+        .main-content-expanded {
+            margin-left: 70px;
+        }
+        .sidebar-menu-item.active {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-left: 3px solid #4F46E5;
+        }
+        .sidebar-menu-item.active .sidebar-icon {
+            color: #4F46E5;
+        }
+        .sidebar-menu-item.active .sidebar-text {
+            color: #4F46E5;
+            font-weight: 500;
+        }
+        .hamburger {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .hamburger:hover {
+            color: #4F46E5;
+        }
+        .dashboard-container {
+            height: calc(100vh - 120px);
+            width: 100%;
+        }
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 90;
+            display: none;
+        }
+        .settings-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 110;
+            display: none;
+            width: 90%;
+            max-width: 500px;
+        }
+        .custom-logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .custom-logo-preview {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+        .custom-logo-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #4F46E5;
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .custom-logo-btn:hover {
+            background-color: #4338CA;
+        }
+        .custom-logo-btn i {
+            font-size: 1rem;
+        }
+        .custom-logo-input {
+            display: none;
+        }
+        .date-filter-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .date-filter-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.5rem;
+            width: 180px;
+        }
+        .attendant-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .attendant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .attendant-card-primary {
+            border-left-color: #4F46E5;
+        }
+        .attendant-card-success {
+            border-left-color: #10B981;
+        }
+        .attendant-card-warning {
+            border-left-color: #F59E0B;
+        }
+        .attendant-card-danger {
+            border-left-color: #EF4444;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            .sidebar-open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .date-filter-container {
+                flex-direction: column;
+                width: 100%;
+            }
+            .date-filter-input {
+                width: 100%;
+            }
+            .dashboard-container iframe {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<!-- Mobile Menu Overlay -->
+<div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">Configurações</h3>
+        <button id="close-settings" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="space-y-4">
+        <div class="custom-logo-container">
+            <img id="custom-logo-preview" class="custom-logo-preview" alt="Logo personalizada">
+            <input type="file" id="custom-logo-input" class="custom-logo-input" accept="image/*">
+            <label for="custom-logo-input" class="custom-logo-btn">
+                <i class="fas fa-upload"></i>
+                <span>Upload de Logo</span>
+            </label>
+            <button id="remove-logo-btn" class="text-sm text-gray-500 hover:text-gray-700 mt-1 hidden">
+                Remover logo
+            </button>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Logo do Menu</label>
+            <select id="logo-icon-select" class="w-full border rounded-lg p-2">
+                <option value="headset">Headset</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="store">Loja</option>
+                <option value="chart-line">Gráfico</option>
+                <option value="rocket">Foguete</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Menu</label>
+            <input id="menu-name-input" type="text" class="w-full border rounded-lg p-2" placeholder="Nome do Menu">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Página de Atendimento</label>
+            <input id="page-name-input" type="text" class="w-full border rounded-lg p-2" placeholder="Nome da Página">
+        </div>
+        <button id="save-settings" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary-dark">
+            Salvar Configurações
+        </button>
+    </div>
+</div>
+
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar bg-white shadow-lg">
+    <div class="p-4 flex items-center justify-between border-b">
+        <div class="flex items-center">
+            <div id="logo-icon" class="logo-icon text-primary text-2xl mr-3">
+                <i class="fas fa-headset"></i>
+            </div>
+            <span id="logo-text" class="logo-text font-bold text-dark">Atendimento</span>
+        </div>
+        <div id="hamburger" class="hamburger text-gray-500">
+            <i class="fas fa-bars"></i>
+        </div>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-2">
+            <li>
+                <a href="#" id="menu-atendimento" class="sidebar-menu-item active flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <div class="sidebar-icon text-gray-500 mr-3">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <span class="sidebar-text">Painel de Atendimento</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" id="menu-atendentes" class="sidebar-menu-item flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <div class="sidebar-icon text-gray-500 mr-3">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <span class="sidebar-text">Atendentes</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" id="menu-dashboard" class="sidebar-menu-item flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <div class="sidebar-icon text-gray-500 mr-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" id="menu-settings" class="sidebar-menu-item flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <div class="sidebar-icon text-gray-500 mr-3">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <span class="sidebar-text">Configurações</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div id="main-content" class="main-content">
+    <!-- Page Content -->
+    <div id="page-content">
+        <!-- Atendimento Page (default) -->
+        <div id="atendimento-page" class="container mx-auto px-4 py-8">
+            <!-- Header -->
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 id="page-title" class="text-3xl font-bold text-dark">Painel de Atendimento</h1>
+                    <p class="text-gray-600">WhatsApp Leads</p>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="date-filter-container">
+                        <input id="date-filter-start" type="text" class="date-filter-input" placeholder="Data inicial">
+                        <span>a</span>
+                        <input id="date-filter-end" type="text" class="date-filter-input" placeholder="Data final">
+                        <button id="apply-date-filter" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+                    <div class="bg-primary text-white p-3 rounded-full"><i class="fas fa-headset"></i></div>
+                </div>
+            </header>
+
+<!-- Botão Exportar CSV -->
+<div class="flex justify-end mb-4">
+    <button id="export-csv" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
+        <i class="fas fa-download mr-2"></i>Exportar CSV
+    </button>
+</div>
+
+
+
+            <!-- Stats (versão melhorada) -->
+            <div id="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto max-h-[70vh]">
+                    <table class="w-full data-table">
+                        <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left">Data</th>
+                            <th class="px-6 py-3 text-left">Telefone</th>
+                            <th class="px-6 py-3 text-left">Nome</th>
+                            <th class="px-6 py-3 text-left">Etapa</th>
+                            <th class="px-6 py-3 text-left">Status</th>
+                            <th class="px-6 py-3 text-left">Atendente</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tbody-leads" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pager" class="flex justify-center gap-4 mt-4"></div>
+
+            <footer class="mt-6 text-center text-gray-500 text-sm">Atualizado em <span id="date"></span></footer>
+        </div>
+
+        <!-- Atendentes Page (hidden by default) -->
+        <div id="atendentes-page" class="container mx-auto px-4 py-8 hidden">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-dark">Desempenho dos Atendentes</h1>
+                    <p class="text-gray-600">Métricas por atendente</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="date-filter-container">
+                        <input id="atendentes-date-filter-start" type="text" class="date-filter-input" placeholder="Data inicial">
+                        <span>a</span>
+                        <input id="atendentes-date-filter-end" type="text" class="date-filter-input" placeholder="Data final">
+                        <button id="apply-atendentes-date-filter" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+                    <div class="bg-primary text-white p-3 rounded-full"><i class="fas fa-users"></i></div>
+                </div>
+            </header>
+            
+            <div id="atendentes-stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+            
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                        <tr class="bg-primary text-white">
+                            <th class="px-6 py-3 text-left">Atendente</th>
+                            <th class="px-6 py-3 text-left">Total Atendimentos</th>
+                            <th class="px-6 py-3 text-left">Respostas</th>
+                            <th class="px-6 py-3 text-left">Sem Resposta</th>
+                            <th class="px-6 py-3 text-left">Interessados</th>
+                            <th class="px-6 py-3 text-left">Bloqueios</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tbody-atendentes" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <footer class="mt-6 text-center text-gray-500 text-sm">Atualizado em <span id="atendentes-date"></span></footer>
+        </div>
+
+        <!-- Dashboard Page (hidden by default) DASH MUDA AQUI MESMO-->
+        <div id="dashboard-page" class="container mx-auto px-4 py-8 hidden">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-dark"></h1>
+                    <p class="text-gray-600">Métricas e visualizações</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="bg-primary text-white p-3 rounded-full"><i class="fas fa-chart-pie"></i></div>
+                </div>
+            </header>
+            
+            <div class="bg-white rounded-lg shadow p-4 dashboard-container">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard feirão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard {
+            font-family: 'Inter', sans-serif;
+        }
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #f1f3f4;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .date-filter {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="dashboard bg-gray-50 p-4">
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+        <!-- Logo and Company Name -->
+        <div class="flex items-center gap-4">
+            <img src="https://static.cdnlive.com.br/uploads/788/etc/17359128138922.png" alt="logo" class="w-16 h-16 object-contain rounded">
+            <h1 class="text-2xl lg:text-4xl font-extrabold text-[#3e2900] uppercase">Dashboard Feirão</h1>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="flex items-center gap-2 text-sm">
+            <label for="startDate" class="font-medium text-gray-600">De:</label>
+            <input type="date" id="startDate" class="date-filter bg-white">
+            <label for="endDate" class="font-medium text-gray-600">Até:</label>
+            <input type="date" id="endDate" class="date-filter bg-white">
+            <button id="applyDate" class="date-filter bg-blue-600 text-white hover:bg-blue-700 px-4 py-2">
+                Aplicar
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div class="space-y-4">
+        <!-- Metrics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="metrics-row">
+            <!-- Cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Leads por Dia -->
+            <div class="chart-container p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold">LEADS POR DIA</h3>
+                    <div class="text-xs text-gray-500" id="leadsDateRange">
+                        Período selecionado
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="leadsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Funil de Conversão -->
+            <div class="chart-container p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold">FUNIL DE CONVERSÃO</h3>
+                    <div class="text-xs text-gray-500">
+                        Taxas de conversão
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-1 gap-4">
+            <!-- Etapas dos Leads -->
+            <div class="chart-container p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold">ETAPAS DOS LEADS</h3>
+                    <div class="text-xs text-gray-500">
+                        Distribuição por etapa
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="stagesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração da API
+        const ENDPOINT = 'https://nwh.chelsan.com.br/webhook/attplanilhafeirao';
+        
+        // Regras de mapeamento
+        const maps = {
+            leads: ['Entrou em contato', 'Novo Lead', 'Lead'],
+            interacaoKeywords: ['Categoria', 'Compra'], // apenas etapas contendo estas palavras
+            aguardo: ['Na Fila', 'Aguardando Atendimento', 'Fila', 'Aguardando'],
+            compras: ['Compra na Loja', 'Queria Comprar na Loja', 'Venda Concluída', 'Compra']
+        };
+
+        // Estado da aplicação
+        const state = {
+            raw: [],
+            start: null,
+            end: null
+        };
+
+        // Elementos DOM
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+        const applyBtn = document.getElementById('applyDate');
+        const metricsRow = document.getElementById('metrics-row');
+        const leadsDateRange = document.getElementById('leadsDateRange');
+
+        // Configurar data padrão (últimos 15 dias)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 15);
+        
+        startInput.valueAsDate = startDate;
+        endInput.valueAsDate = endDate;
+        state.start = startDate;
+        state.end = endDate;
+
+        // Event Listeners
+        applyBtn.addEventListener('click', () => {
+            state.start = startInput.value ? new Date(startInput.value) : null;
+            state.end = endInput.value ? new Date(endInput.value) : null;
+            render();
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch(ENDPOINT);
+                state.raw = await res.json();
+                render();
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                // Mostrar mensagem de erro para o usuário
+            }
+        });
+
+        // Filtra linhas com base no intervalo de datas
+        function filterRows(rows) {
+            return rows.filter(r => {
+                if (!state.start && !state.end) return true;
+                
+                const [d, m, y] = r.Data.split('/');
+                const dt = new Date(`${y}-${m}-${d}`);
+                
+                if (state.start && dt < state.start) return false;
+                if (state.end && dt > state.end) return false;
+                
+                return true;
+            });
+        }
+
+        // Calcula os valores para os cards de métricas
+        function calcCards(rows) {
+            const t = {
+                leads: rows.length,
+                interacao: 0,
+                aguardo: 0,
+                compras: 0
+            };
+            
+            rows.forEach(r => {
+                const etapa = r['Etapa Funil'];
+                
+                if (maps.interacaoKeywords.some(k => etapa.includes(k))) t.interacao++;
+                if (maps.aguardo.includes(etapa)) t.aguardo++;
+                if (maps.compras.includes(etapa)) t.compras++;
+            });
+            
+            return t;
+        }
+
+        // Renderiza os cards de métricas
+        function renderCards(t) {
+            const metrics = [
+                { label: 'LEADS', value: t.leads, color: 'bg-blue-500', trend: '+' + Math.round(t.leads/15) + '/dia' },
+                { label: 'INTERAÇÕES', value: t.interacao, color: 'bg-purple-500', trend: Math.round((t.interacao/t.leads)*100) + '% dos leads' },
+                { label: 'AGENDAMENTOS', value: t.aguardo, color: 'bg-green-500', trend: Math.round((t.aguardo/t.leads)*100) + '% dos leads' },
+                { label: 'COMPRA NA LOJA', value: t.compras, color: 'bg-red-500', trend: Math.round((t.compras/t.leads)*100) + '% dos leads' }
+            ];
+            
+            metricsRow.innerHTML = metrics.map(metric => `
+                <div class="metric-card p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">${metric.label}</p>
+                            <h3 class="text-2xl font-semibold mt-1">${metric.value.toLocaleString('pt-BR')}</h3>
+                        </div>
+                        <div class="text-xs bg-blue-50 px-2 py-1 rounded-full">
+                            ${metric.trend}
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="progress-bar">
+                            <div class="progress-fill ${metric.color}" style="width: ${Math.min(100, (metric.value/(t.leads || 1))*100)}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Atualiza o texto do intervalo de datas
+            const startStr = state.start ? state.start.toLocaleDateString('pt-BR') : 'Início';
+            const endStr = state.end ? state.end.toLocaleDateString('pt-BR') : 'Hoje';
+            leadsDateRange.textContent = `${startStr} - ${endStr}`;
+        }
+
+        // Gráfico de Leads por Dia
+        let lineChart;
+        function renderLine(rows) {
+            const agg = {};
+            
+            rows.forEach(r => {
+                agg[r.Data] = (agg[r.Data] || 0) + 1;
+            });
+            
+            const labels = Object.keys(agg).sort((a, b) => {
+                const [d1, m1, y1] = a.split('/');
+                const [d2, m2, y2] = b.split('/');
+                return new Date(`${y1}-${m1}-${d1}`) - new Date(`${y2}-${m2}-${d2}`);
+            });
+            
+            const data = labels.map(l => agg[l]);
+            
+            if (lineChart) lineChart.destroy();
+            
+            lineChart = new Chart(
+                document.getElementById('leadsChart').getContext('2d'),
+                {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderColor: '#3B82F6',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#3B82F6',
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        // Gráfico de Funil
+        let funnelChart;
+        function renderFunnel(k) {
+            const data = [k.leads, k.interacao, k.aguardo, k.compras];
+            
+            if (funnelChart) funnelChart.destroy();
+            
+            funnelChart = new Chart(
+                document.getElementById('funnelChart').getContext('2d'),
+                {
+                    type: 'bar',
+                    data: {
+                        labels: ['Leads', 'Interação', 'Agendamento', 'Compra na Loja'],
+                        datasets: [{
+                            data,
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.7)',
+                                'rgba(139, 92, 246, 0.7)',
+                                'rgba(16, 185, 129, 0.7)',
+                                'rgba(239, 68, 68, 0.7)'
+                            ],
+                            borderColor: [
+                                '#3B82F6',
+                                '#8B5CF6',
+                                '#10B981',
+                                '#EF4444'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        // Gráfico de Etapas
+        let stageChart;
+        function renderStages(rows) {
+            const agg = {};
+            
+            rows.forEach(r => {
+                agg[r['Etapa Funil']] = (agg[r['Etapa Funil']] || 0) + 1;
+            });
+            
+            const labels = Object.keys(agg);
+            const data = labels.map(l => agg[l]);
+            
+            if (stageChart) stageChart.destroy();
+            
+            stageChart = new Chart(
+                document.getElementById('stagesChart').getContext('2d'),
+                {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: '#f5c526',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        // Função principal de renderização
+        function render() {
+            const rows = filterRows(state.raw);
+            const kpis = calcCards(rows);
+            
+            renderCards(kpis);
+            renderLine(rows);
+            renderFunnel(kpis);
+            renderStages(rows);
+        }
+    </script>
+</body>
+</html>
+
+            </div>
+            
+            <footer class="mt-6 text-center text-gray-500 text-sm">Atualizado em <span id="dashboard-date"></span></footer>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-4 right-4 hidden px-4 py-2 rounded-lg shadow-lg text-white"></div>
+
+<script>
+    const API = 'https://nwh.chelsan.com.br/webhook';
+    const PAGE_SIZE = 20;
+    let LEADS = [];
+    let FILTERED_LEADS = [];
+    let currentPage = 1;
+    let dateRange = { start: null, end: null };
+    let atendentesDateRange = { start: null, end: null };
+
+    const statusToKey = {'Na Fila':'fila','Mensagem Enviada':'mensagem','Respondeu':'respondeu','Não Respondeu':'nao-respondeu','Queria Comprar na Loja':'queria-comprar','Pedido de Entrega':'entrega','Bloqueou o número':'bloqueou'};
+    const keyToStatus = Object.fromEntries(Object.entries(statusToKey).map(([k,v])=>[v,k]));
+    const STAT_KEYS = Object.values(statusToKey);
+    const ATENDENTES = ['Daniela Silveira', 'Josiane de Lima'];
+
+    // Configurações
+    let appSettings = {
+        logoIcon: 'headset',
+        menuName: 'Atendimento',
+        pageName: 'Painel de Atendimento',
+        customLogo: null
+    };
+
+    // Carregar configurações do localStorage
+    function loadSettings() {
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            appSettings = JSON.parse(savedSettings);
+            
+            // Verificar se há uma logo personalizada
+            if (appSettings.customLogo) {
+                const preview = document.getElementById('custom-logo-preview');
+                preview.src = appSettings.customLogo;
+                preview.style.display = 'block';
+                document.getElementById('remove-logo-btn').style.display = 'block';
+            }
+        }
+        applySettings();
+    }
+
+    // Salvar configurações no localStorage
+    function saveSettings() {
+        localStorage.setItem('appSettings', JSON.stringify(appSettings));
+        applySettings();
+    }
+
+    // Aplicar configurações na interface
+    function applySettings() {
+        // Logo do menu
+        const logoIcon = document.getElementById('logo-icon');
+        
+        if (appSettings.customLogo) {
+            logoIcon.innerHTML = `<img src="${appSettings.customLogo}" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;">`;
+        } else {
+            logoIcon.innerHTML = `<i class="fas fa-${appSettings.logoIcon}"></i>`;
+        }
+        
+        // Nome do menu
+        document.getElementById('logo-text').textContent = appSettings.menuName;
+        
+        // Nome da página
+        document.getElementById('page-title').textContent = appSettings.pageName;
+    }
+
+    function clsStatus(k){return 'status-'+k}
+    function maskPhone(p){p=p.replace(/\D/g,'');return p.length===11?`(${p.slice(0,2)}) ${p.slice(2,7)}-${p.slice(7)}`:`(${p.slice(0,2)}) ${p.slice(2,6)}-${p.slice(6)}`}
+    function toast(msg,ok=true){const t=document.getElementById('toast');t.textContent=msg;t.className=`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${ok?'bg-green-600':'bg-red-600'}`;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500)}
+    function formatDate(date) {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString('pt-BR');
+    }
+
+    function parseDate(dateStr) {
+        if (!dateStr) return null;
+        const [day, month, year] = dateStr.split('/');
+        return new Date(year, month - 1, day);
+    }
+
+    function isDateInRange(dateStr, startDate, endDate) {
+        if (!dateStr) return false;
+        const date = parseDate(dateStr);
+        if (!date) return false;
+        
+        if (startDate && endDate) {
+            return date >= startDate && date <= endDate;
+        } else if (startDate) {
+            return date >= startDate;
+        } else if (endDate) {
+            return date <= endDate;
+        }
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+        loadSettings();
+        document.getElementById('date').textContent=new Date().toLocaleString('pt-BR');
+        document.getElementById('dashboard-date').textContent=new Date().toLocaleString('pt-BR');
+        document.getElementById('atendentes-date').textContent=new Date().toLocaleString('pt-BR');
+        setActivePage('dashboard');
+        loadLeads();
+        
+        // Inicializar datepickers
+        flatpickr("#date-filter-start", {
+            locale: "pt",
+            dateFormat: "d/m/Y",
+            allowInput: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                dateRange.start = selectedDates[0] || null;
+            }
+        });
+        
+        flatpickr("#date-filter-end", {
+            locale: "pt",
+            dateFormat: "d/m/Y",
+            allowInput: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                dateRange.end = selectedDates[0] || null;
+            }
+        });
+        
+        flatpickr("#atendentes-date-filter-start", {
+            locale: "pt",
+            dateFormat: "d/m/Y",
+            allowInput: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                atendentesDateRange.start = selectedDates[0] || null;
+            }
+        });
+        
+        flatpickr("#atendentes-date-filter-end", {
+            locale: "pt",
+            dateFormat: "d/m/Y",
+            allowInput: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                atendentesDateRange.end = selectedDates[0] || null;
+            }
+        });
+
+        // Aplicar filtro de data
+        document.getElementById('apply-date-filter').addEventListener('click', function() {
+            filterLeadsByDate();
+        });
+        
+        document.getElementById('apply-atendentes-date-filter').addEventListener('click', function() {
+            renderAtendentesPage();
+        });
+
+        // Sidebar toggle
+        document.getElementById('hamburger').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-menu-overlay');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('sidebar-open');
+                overlay.style.display = sidebar.classList.contains('sidebar-open') ? 'block' : 'none';
+            } else {
+                document.getElementById('sidebar').classList.toggle('sidebar-collapsed');
+                document.getElementById('main-content').classList.toggle('main-content-expanded');
+            }
+        });
+
+        // Fechar menu ao clicar no overlay (mobile)
+        document.getElementById('mobile-menu-overlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            this.style.display = 'none';
+        });
+
+        // Menu navigation
+        document.getElementById('menu-atendimento').addEventListener('click', function(e) {
+            e.preventDefault();
+            setActivePage('atendimento');
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-open');
+                document.getElementById('mobile-menu-overlay').style.display = 'none';
+            }
+        });
+
+        document.getElementById('menu-atendentes').addEventListener('click', function(e) {
+            e.preventDefault();
+            setActivePage('atendentes');
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-open');
+                document.getElementById('mobile-menu-overlay').style.display = 'none';
+            }
+        });
+
+        document.getElementById('menu-dashboard').addEventListener('click', function(e) {
+            e.preventDefault();
+            setActivePage('dashboard');
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-open');
+                document.getElementById('mobile-menu-overlay').style.display = 'none';
+            }
+        });
+
+        // Configurações
+        document.getElementById('menu-settings').addEventListener('click', function(e) {
+            e.preventDefault();
+            openSettingsModal();
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-open');
+                document.getElementById('mobile-menu-overlay').style.display = 'none';
+            }
+        });
+
+        // Configurações do modal
+        document.getElementById('close-settings').addEventListener('click', closeSettingsModal);
+        document.getElementById('save-settings').addEventListener('click', saveNewSettings);
+        
+        // Upload de logo personalizada
+        document.getElementById('custom-logo-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('custom-logo-preview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('remove-logo-btn').style.display = 'block';
+                    
+                    // Salvar a logo como base64
+                    appSettings.customLogo = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Remover logo personalizada
+        document.getElementById('remove-logo-btn').addEventListener('click', function() {
+            const preview = document.getElementById('custom-logo-preview');
+            preview.src = '';
+            preview.style.display = 'none';
+            document.getElementById('custom-logo-input').value = '';
+            this.style.display = 'none';
+            appSettings.customLogo = null;
+        });
+    });
+
+    function openSettingsModal() {
+        // Preencher os campos com as configurações atuais
+        document.getElementById('logo-icon-select').value = appSettings.logoIcon;
+        document.getElementById('menu-name-input').value = appSettings.menuName;
+        document.getElementById('page-name-input').value = appSettings.pageName;
+        
+        // Mostrar o modal
+        document.getElementById('settings-modal').style.display = 'block';
+        document.getElementById('mobile-menu-overlay').style.display = 'block';
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('mobile-menu-overlay').style.display = 'none';
+    }
+
+    function saveNewSettings() {
+        appSettings.logoIcon = document.getElementById('logo-icon-select').value;
+        appSettings.menuName = document.getElementById('menu-name-input').value;
+        appSettings.pageName = document.getElementById('page-name-input').value;
+        
+        saveSettings();
+        closeSettingsModal();
+        toast('Configurações salvas com sucesso!');
+    }
+
+    function setActivePage(page) {
+        // Update menu items
+        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        if (page === 'atendimento') {
+            document.getElementById('menu-atendimento').classList.add('active');
+            document.getElementById('atendimento-page').classList.remove('hidden');
+            document.getElementById('atendentes-page').classList.add('hidden');
+            document.getElementById('dashboard-page').classList.add('hidden');
+        } else if (page === 'atendentes') {
+            document.getElementById('menu-atendentes').classList.add('active');
+            document.getElementById('atendimento-page').classList.add('hidden');
+            document.getElementById('atendentes-page').classList.remove('hidden');
+            document.getElementById('dashboard-page').classList.add('hidden');
+            renderAtendentesPage();
+        } else if (page === 'dashboard') {
+            document.getElementById('menu-dashboard').classList.add('active');
+            document.getElementById('atendimento-page').classList.add('hidden');
+            document.getElementById('atendentes-page').classList.add('hidden');
+            document.getElementById('dashboard-page').classList.remove('hidden');
+        }
+    }
+
+    async function loadLeads(){
+        try{
+            const res = await fetch(`${API}/leads`);
+            const raw = await res.json();
+            LEADS = raw.map(r=>({
+                row: r.row_number,
+                data: r.Data || '',
+                telefone: String(r.Telefone||''),
+                nome: r.Nome || '',
+                etapa: r['Etapa Funil'] || 'Atendimento Humano',
+                status: statusToKey[r['Status Atendimento']] || 'fila',
+                attendant: r.Atendente || '',
+                statusText: keyToStatus[statusToKey[r['Status Atendimento']] || 'fila'] || '',
+                telefoneMasked: maskPhone(String(r.Telefone||''))
+            }));
+            FILTERED_LEADS = [...LEADS];
+            renderAll();
+        }catch(e){ toast('Erro ao carregar',false); console.error(e);}
+    }
+
+    function filterLeadsByDate() {
+        if (!dateRange.start && !dateRange.end) {
+            FILTERED_LEADS = [...LEADS];
+        } else {
+            FILTERED_LEADS = LEADS.filter(lead => 
+                isDateInRange(lead.data, dateRange.start, dateRange.end)
+            );
+        }
+        
+        currentPage = 1;
+        renderAll();
+    }
+
+    function renderAll(){ renderStats(); renderTable(); renderPager(); }
+
+    function renderStats(){
+        const totalLeads = FILTERED_LEADS.length;
+        const atendidos = FILTERED_LEADS.filter(l=>l.status!=='fila').length;
+        const naFila = totalLeads - atendidos;
+        
+        const statsArr = [
+            {
+                title: 'Total de Leads',
+                value: totalLeads,
+                icon: 'users',
+                color: 'primary',
+                description: dateRange.start || dateRange.end 
+                    ? `Período: ${dateRange.start ? formatDate(dateRange.start) : ''} ${dateRange.end ? 'a ' + formatDate(dateRange.end) : ''}`
+                    : 'Leads captados'
+            },
+            {
+                title: 'Na Fila',
+                value: naFila,
+                icon: 'clock',
+                color: 'warning',
+                description: 'Aguardando atendimento'
+            },
+            {
+                title: 'Atendidos',
+                value: atendidos,
+                icon: 'headset',
+                color: 'info',
+                description: 'Leads com atendimento iniciado'
+            },
+            {
+                title: 'Taxa de Atendimento',
+                value: totalLeads > 0 ? Math.round((atendidos / totalLeads) * 100) + '%' : '0%',
+                icon: 'percent',
+                color: 'success',
+                description: 'Porcentagem de leads atendidos'
+            }
+        ];
+        
+        const html = statsArr.map(stat => `
+            <div class="stat-card bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">${stat.title}</p>
+                        <h3 class="text-2xl font-bold mt-1 text-${stat.color}">${stat.value}</h3>
+                        <p class="text-xs text-gray-400 mt-1">${stat.description}</p>
+                    </div>
+                    <div class="bg-${stat.color}-100 p-3 rounded-full text-${stat.color}">
+                        <i class="fas fa-${stat.icon}"></i>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('stats').innerHTML = html;
+    }
+
+    function renderTable(){
+        const start = (currentPage-1)*PAGE_SIZE;
+        const rows  = FILTERED_LEADS.slice(start,start+PAGE_SIZE);
+        const tbody = document.getElementById('tbody-leads');
+        tbody.innerHTML='';
+        rows.forEach(lead=>{
+            const tr=document.createElement('tr');
+            tr.className='hover:bg-gray-50';
+            tr.innerHTML = `
+                <td class="px-6 py-4">${lead.data}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <a class="wa-btn ${lead.attendant?'':'wa-disabled'} bg-whatsapp text-white px-3 py-1 rounded flex items-center gap-1" data-row="${lead.row}" data-phone="${lead.telefone}" href="${lead.attendant?`https://wa.me/${lead.telefone}`:'#'}" target="_blank">
+                        <i class="fab fa-whatsapp"></i>${lead.telefoneMasked}
+                    </a>
+                </td>
+                <td class="px-6 py-4 font-medium">${lead.nome}</td>
+                <td class="px-6 py-4">${lead.etapa}</td>
+                <td class="px-6 py-4">
+                    <select class="status-select px-2 py-1 rounded ${clsStatus(lead.status)}" data-row="${lead.row}" data-field="status">
+                        ${STAT_KEYS.map(k=>`<option value="${k}" ${k===lead.status?'selected':''}>${keyToStatus[k]}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="px-6 py-4">
+                    <select class="att-select px-2 py-1 rounded bg-gray-100" data-row="${lead.row}" data-field="attendant">
+                        <option value="">Selecione</option>
+                        ${ATENDENTES.map(a=>`<option value="${a}" ${a===lead.attendant?'selected':''}>${a}</option>`).join('')}
+                    </select>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+        attachListeners();
+    }
+
+    function renderPager(){
+        const totalPages = Math.max(1, Math.ceil(FILTERED_LEADS.length/PAGE_SIZE));
+        document.getElementById('pager').innerHTML = `
+            <button onclick="chgPg(-1)" ${currentPage===1?'disabled class="opacity-40"':''} class="px-4 py-2 border rounded-lg hover:bg-gray-50">Anterior</button>
+            <span class="flex items-center">Página ${currentPage} / ${totalPages}</span>
+            <button onclick="chgPg(1)" ${currentPage===totalPages?'disabled class="opacity-40"':''} class="px-4 py-2 border rounded-lg hover:bg-gray-50">Próxima</button>`;
+    }
+    function chgPg(d){currentPage+=d; renderTable(); renderPager();}
+
+    function attachListeners(){
+        document.querySelectorAll('.status-select').forEach(sel=>{
+            sel.onchange = async function(){ this.className=`status-select px-2 py-1 rounded ${clsStatus(this.value)}`; await pushUpdate(this.dataset.row,'Status Atendimento',keyToStatus[this.value]); renderStats(); };
+        });
+        document.querySelectorAll('.att-select').forEach(sel=>{
+            sel.onchange = async function(){ const val=this.value; toggleWa(this.dataset.row,val!=='' ); await pushUpdate(this.dataset.row,'Atendente',val); };
+        });
+        document.querySelectorAll('.wa-btn').forEach(btn=>{
+            btn.onclick = e=>{ if(btn.classList.contains('wa-disabled')){ e.preventDefault(); toast('Selecione um atendente',false);} };
+        });
+    }
+
+    function toggleWa(row,enable){const link=document.querySelector(`a[data-row='${row}']`);if(!link)return;link.classList.toggle('wa-disabled',!enable);link.href=enable?`https://wa.me/${link.dataset.phone}`:'#';}
+
+    async function pushUpdate(row,field,value){ try{ await fetch(`${API}/ss`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({row,field,value})}); toast('Atualizado'); }catch(e){ toast('Erro',false); console.error(e); } }
+
+    function renderAtendentesPage() {
+        // Filtrar leads pelo período selecionado
+        let filteredLeads = LEADS;
+        if (atendentesDateRange.start || atendentesDateRange.end) {
+            filteredLeads = LEADS.filter(lead => 
+                isDateInRange(lead.data, atendentesDateRange.start, atendentesDateRange.end)
+            );
+        }
+        
+        // Calcular métricas por atendente
+        const atendentesStats = {};
+        
+        ATENDENTES.forEach(atendente => {
+            const atendimentos = filteredLeads.filter(lead => lead.attendant === atendente);
+            const totalAtendimentos = atendimentos.length;
+            const respostas = atendimentos.filter(lead => lead.status === 'respondeu').length;
+            const semResposta = atendimentos.filter(lead => lead.status === 'nao-respondeu').length;
+            const interessados = atendimentos.filter(lead => lead.status === 'queria-comprar').length;
+            const bloqueios = atendimentos.filter(lead => lead.status === 'bloqueou').length;
+            
+            atendentesStats[atendente] = {
+                totalAtendimentos,
+                respostas,
+                semResposta,
+                interessados,
+                bloqueios,
+                taxaResposta: totalAtendimentos > 0 ? Math.round((respostas / totalAtendimentos) * 100) : 0
+            };
+        });
+        
+        // Ordenar atendentes por total de atendimentos
+        const sortedAtendentes = [...ATENDENTES].sort((a, b) => 
+            atendentesStats[b].totalAtendimentos - atendentesStats[a].totalAtendimentos
+        );
+        
+        // Renderizar cards de estatísticas
+        const cardsHtml = sortedAtendentes.map((atendente, index) => {
+            const stats = atendentesStats[atendente];
+            const cardColors = ['primary', 'success', 'warning', 'danger'];
+            const color = cardColors[index % cardColors.length];
+            
+            return `
+                <div class="attendant-card attendant-card-${color} bg-white p-4 rounded-lg shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-bold">${atendente}</h3>
+                            <p class="text-sm text-gray-500 mt-1">Total Atendimentos: <span class="font-bold">${stats.totalAtendimentos}</span></p>
+                            <p class="text-sm text-gray-500">Taxa de Resposta: <span class="font-bold">${stats.taxaResposta}%</span></p>
+                        </div>
+                        <div class="bg-${color}-100 p-3 rounded-full text-${color}">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <div class="text-center bg-blue-50 p-2 rounded">
+                            <p class="text-xs text-gray-500">Respostas</p>
+                            <p class="font-bold text-blue-600">${stats.respostas}</p>
+                        </div>
+                        <div class="text-center bg-red-50 p-2 rounded">
+                            <p class="text-xs text-gray-500">Sem Resposta</p>
+                            <p class="font-bold text-red-600">${stats.semResposta}</p>
+                        </div>
+                        <div class="text-center bg-green-50 p-2 rounded">
+                            <p class="text-xs text-gray-500">Interessados</p>
+                            <p class="font-bold text-green-600">${stats.interessados}</p>
+                        </div>
+                        <div class="text-center bg-purple-50 p-2 rounded">
+                            <p class="text-xs text-gray-500">Bloqueios</p>
+                            <p class="font-bold text-purple-600">${stats.bloqueios}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('atendentes-stats').innerHTML = cardsHtml;
+        
+        // Renderizar tabela de atendentes
+        const tbody = document.getElementById('tbody-atendentes');
+        tbody.innerHTML = '';
+        
+        sortedAtendentes.forEach(atendente => {
+            const stats = atendentesStats[atendente];
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50';
+            tr.innerHTML = `
+                <td class="px-6 py-4 font-medium">${atendente}</td>
+                <td class="px-6 py-4">${stats.totalAtendimentos}</td>
+                <td class="px-6 py-4">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">${stats.respostas}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">${stats.semResposta}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">${stats.interessados}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">${stats.bloqueios}</span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        // Atualizar data
+        document.getElementById('atendentes-date').textContent = new Date().toLocaleString('pt-BR');
+    }
+
+function exportLeadsToCSV() {
+    if (FILTERED_LEADS.length === 0) {
+        toast('Nenhum lead para exportar!', false);
+        return;
+    }
+
+    const headers = ['Data', 'Telefone', 'Nome', 'Etapa', 'Status', 'Atendente'];
+    const rows = FILTERED_LEADS.map(lead => [
+        lead.data,
+        lead.telefoneMasked,
+        lead.nome,
+        lead.etapa,
+        keyToStatus[lead.status] || lead.status,
+        lead.attendant
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8," 
+        + [headers, ...rows].map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const now = new Date().toISOString().slice(0,10);
+    link.setAttribute("download", `leads_export_${now}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+document.getElementById('export-csv').addEventListener('click', exportLeadsToCSV);
+
+
+
+    
+</script>
+</body>
+</html>
