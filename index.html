@@ -559,6 +559,7 @@
             leads: ['Entrou em contato', 'Novo Lead', 'Lead'],
             interacaoKeywords: ['Categoria', 'Compra'], // apenas etapas contendo estas palavras
             aguardo: ['Na Fila', 'Aguardando Atendimento', 'Fila', 'Aguardando'],
+            online: ['Online', 'online'],
             compras: ['Compra na Loja', 'Queria Comprar na Loja', 'Venda Concluída', 'Compra']
         };
 
@@ -645,7 +646,7 @@
             const metrics = [
                 { label: 'LEADS', value: t.leads, color: 'bg-blue-500', trend: '+' + Math.round(t.leads/15) + '/dia' },
                 { label: 'INTERAÇÕES', value: t.interacao, color: 'bg-purple-500', trend: Math.round((t.interacao/t.leads)*100) + '% dos leads' },
-                { label: 'AGENDAMENTOS', value: t.aguardo, color: 'bg-green-500', trend: Math.round((t.aguardo/t.leads)*100) + '% dos leads' },
+                { label: 'COMPRAS ONLINE', value: t.online, color: 'bg-green-500', trend: Math.round((t.online/t.leads)*100) + '% dos leads' },
                 { label: 'COMPRA NA LOJA', value: t.compras, color: 'bg-red-500', trend: Math.round((t.compras/t.leads)*100) + '% dos leads' }
             ];
             
