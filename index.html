@@ -645,7 +645,7 @@
             const metrics = [
                 { label: 'LEADS', value: t.leads, color: 'bg-blue-500', trend: '+' + Math.round(t.leads/15) + '/dia' },
                 { label: 'INTERAÇÕES', value: t.interacao, color: 'bg-purple-500', trend: Math.round((t.interacao/t.leads)*100) + '% dos leads' },
-                { label: 'AGUARDANDO ATENDIMENTO', value: t.aguardo, color: 'bg-green-500', trend: Math.round((t.aguardo/t.leads)*100) + '% dos leads' },
+                { label: 'ATENDIMENTO HUMANO', value: t.aguardo, color: 'bg-green-500', trend: Math.round((t.aguardo/t.leads)*100) + '% dos leads' },
                 { label: 'COMPRA NA LOJA', value: t.compras, color: 'bg-red-500', trend: Math.round((t.compras/t.leads)*100) + '% dos leads' }
             ];
             
